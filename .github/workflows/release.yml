@@ -30,8 +30,6 @@ jobs:
       CARGO_TARGET_DIR: target
       CARGO_TERM_COLOR: always
       MACOSX_DEPLOYMENT_TARGET: "12.0"
-      CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
-      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
       CC_x86_64_unknown_linux_musl: musl-gcc
       CC_aarch64_unknown_linux_musl: musl-gcc
       # Avoid GCC's libgcc outline-atomic helpers in statically linked vendored D-Bus.
@@ -54,6 +52,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y musl-tools pkg-config
           rustup target add "${{ matrix.target }}"
+          # Link with Rust's matching musl CRT/libc, rather than Ubuntu's older libc.
+          linux_host="$(rustc --verbose --version | sed -n 's/^host: //p')"
+          linux_linker="$(rustc --print sysroot)/lib/rustlib/$linux_host/bin/rust-lld"
+          test -x "$linux_linker"
+          printf 'CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=%s\nCARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=%s\n' "$linux_linker" "$linux_linker" >> "$GITHUB_ENV"
       - name: Validate macOS build
         if: runner.os == 'macOS'
         run: |
