@@ -69,16 +69,16 @@ def main():
             if any(kind["kind"] != "dev" for kind in dep["dep_kinds"]):
                 pending.append(dep["pkg"])
 
-    name = f"nelko-cli-v{version}-{PLATFORMS[args.target]}"
+    name = f"open-nelko-cli-v{version}-{PLATFORMS[args.target]}"
     args.output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as temporary:
         stage = Path(temporary) / name
         stage.mkdir()
-        shutil.copy2(binary, stage / "nelko")
-        for document in ["README.md", "LICENSE", "HARDWARE.md", "CONTRIBUTING.md", "VALIDATION.md"]:
+        shutil.copy2(binary, stage / "open-nelko")
+        for document in ["README.md", "LICENSE", "NOTICE.md", "HARDWARE.md", "CONTRIBUTING.md", "VALIDATION.md"]:
             shutil.copy2(root / document, stage / document)
         shutil.copytree(root / "docs", stage / "docs")
-        notices = ["Third-party dependencies compiled into nelko\n"]
+        notices = ["Third-party dependencies compiled into open-nelko\n"]
         for package in sorted((packages[i] for i in included if i != root_id), key=lambda p: (p["name"], p["version"])):
             source = Path(package["manifest_path"]).parent
             licenses = {p for p in source.rglob("*") if p.is_file() and any(word in p.name.upper() for word in ("LICENSE", "LICENCE", "COPYING", "COPYRIGHT", "OFL", "NOTICE")) and p.suffix.lower() not in (".rs", ".c", ".h", ".py", ".sh", ".js", ".ts")}

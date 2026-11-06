@@ -1,9 +1,10 @@
 [package]
-name = "nelko-cli"
+name = "open-nelko-cli"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92"
-description = "Print 4x6 PDF labels to a Nelko PL70e-BT over USB or Bluetooth"
+description = "Independent hobby CLI for printing PDF labels to compatible Nelko printers"
+repository = "https://github.com/christopherarter/open-nelko-cli"
 license = "MIT"
 readme = "README.md"
 keywords = ["nelko", "label", "printer", "bluetooth", "tspl"]
@@ -14,7 +15,7 @@ categories = ["command-line-utilities"]
 portable-pdf = []
 
 [[bin]]
-name = "nelko"
+name = "open-nelko"
 path = "src/main.rs"
 
 [dependencies]

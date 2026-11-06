@@ -7,7 +7,7 @@ rustup target add aarch64-apple-darwin x86_64-apple-darwin
 cargo build --release --locked --target aarch64-apple-darwin
 cargo build --release --locked --target x86_64-apple-darwin
 mkdir -p dist
-lipo -create target/aarch64-apple-darwin/release/nelko target/x86_64-apple-darwin/release/nelko -output dist/nelko
-codesign --force --sign - --identifier com.nelko-cli.cli dist/nelko
-codesign --verify --strict dist/nelko
-python3 scripts/package.py --binary dist/nelko --target universal-apple-darwin
+lipo -create target/aarch64-apple-darwin/release/open-nelko target/x86_64-apple-darwin/release/open-nelko -output dist/open-nelko
+codesign --force --sign - --identifier io.github.christopherarter.open-nelko dist/open-nelko
+codesign --verify --strict dist/open-nelko
+python3 scripts/package.py --binary dist/open-nelko --target universal-apple-darwin

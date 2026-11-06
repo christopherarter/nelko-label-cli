@@ -96,9 +96,9 @@ async fn connect(selector: &str, seconds: u64) -> Result<(Adapter, Peripheral)> 
     }
     ensure!(
         matches.len() <= 1,
-        "multiple Bluetooth printers match {selector}; use a peripheral ID from `nelko devices --transport bluetooth`"
+        "multiple Bluetooth printers match {selector}; use a peripheral ID from `open-nelko devices --transport bluetooth`"
     );
-    let peripheral = matches.pop().with_context(|| format!("Bluetooth printer {selector} not found; turn it on and run `nelko devices --transport bluetooth`"))?;
+    let peripheral = matches.pop().with_context(|| format!("Bluetooth printer {selector} not found; turn it on and run `open-nelko devices --transport bluetooth`"))?;
     time::timeout(OPERATION_TIMEOUT, peripheral.connect())
         .await
         .context("Bluetooth connection timed out")??;
@@ -179,7 +179,7 @@ fn choose_characteristic(
         matches.len() <= 1,
         "multiple Bluetooth serial channels found; use `inspect` and select --characteristic UUID"
     );
-    matches.pop().context("no recognized Bluetooth print characteristic; use `nelko inspect` and specify --characteristic UUID after identifying the TSPL data channel")
+    matches.pop().context("no recognized Bluetooth print characteristic; use `open-nelko inspect` and specify --characteristic UUID after identifying the TSPL data channel")
 }
 
 pub(crate) async fn status(

@@ -25,7 +25,7 @@ The renderer and preview do not contain TSPL commands. Transport modules do not 
 
 Add the model's measured resolution and intended media to `PrinterProfile`. `Media` dimensions are in inches and may be fractional. Its dot dimensions determine raster allocation, preview output and the encoded bitmap size.
 
-Add the profile to `profile::ALL` to register its stable CLI name and include it in `nelko profiles`. Give it the correct default device name and BLE channel, or set `bluetooth: None` for a USB-only printer. The existing USB transport accepts a product name, serial number or vendor/product identifier; it currently discovers standard USB printer-class interfaces.
+Add the profile to `profile::ALL` to register its stable CLI name and include it in `open-nelko profiles`. Give it the correct default device name and BLE channel, or set `bluetooth: None` for a USB-only printer. The existing USB transport accepts a product name, serial number or vendor/product identifier; it currently discovers standard USB printer-class interfaces.
 
 Then verify the physical result. Similar branding or matching services do not establish that a device accepts the same bitmap polarity, orientation or print command. `--characteristic` is a diagnostic override and does not install support for a new protocol.
 

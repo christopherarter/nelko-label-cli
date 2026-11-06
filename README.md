@@ -1,27 +1,29 @@
-# nelko-cli
+# open-nelko-cli
+
+An independent, non-commercial hobby project, unaffiliated with Nelko or any printer manufacturer. Provided **AS IS, without warranty or guaranteed support**, under the [MIT License](LICENSE). See [NOTICE.md](NOTICE.md) for the project and affiliation notice. The MIT license permits commercial reuse; "non-commercial" describes this project's purpose and maintenance.
 
 Print 4×6 PDF shipping labels to a Nelko PL70e-BT from your Mac's terminal, over USB or Bluetooth.
 
 ```sh
-nelko devices
-nelko preview label.pdf --output label.png
-nelko print label.pdf --transport usb
-nelko print label.pdf --transport bluetooth
+open-nelko devices
+open-nelko preview label.pdf --output label.png
+open-nelko print label.pdf --transport usb
+open-nelko print label.pdf --transport bluetooth
 ```
 
 This is an independent, early-stage CLI for the PL70e-BT. macOS and Linux are supported. Hardware qualification is tracked in [HARDWARE.md](HARDWARE.md). Other Nelko models can use different protocols.
 
 ## Install
 
-Release archives contain a single `nelko` executable with its Rust dependencies compiled in. macOS uses its built-in PDF and Bluetooth frameworks. Linux includes a Rust PDF renderer and a statically linked D-Bus client. Running a release does not require Rust, Homebrew, Python, Poppler, libusb or a vendor driver.
+Release archives contain a single `open-nelko` executable with its Rust dependencies compiled in. macOS uses its built-in PDF and Bluetooth frameworks. Linux includes a Rust PDF renderer and a statically linked D-Bus client. Running a release does not require Rust, Homebrew, Python, Poppler, libusb or a vendor driver.
 
-Download the matching archive from [GitHub Releases](https://github.com/christopherarter/nelko-label-cli/releases), extract it, then run `./nelko --help`. You can put the executable in any directory on your `PATH`.
+Download the matching archive from [GitHub Releases](https://github.com/christopherarter/open-nelko-cli/releases), extract it, then run `./open-nelko --help`. You can put the executable in any directory on your `PATH`.
 
 | Download | Runs on |
 | --- | --- |
-| `nelko-cli-vVERSION-macos-universal.tar.gz` | Apple silicon and Intel Macs |
-| `nelko-cli-vVERSION-linux-x86_64.tar.gz` | 64-bit Intel/AMD Linux |
-| `nelko-cli-vVERSION-linux-arm64.tar.gz` | 64-bit ARM Linux, including ARM64 Raspberry Pi OS |
+| `open-nelko-cli-vVERSION-macos-universal.tar.gz` | Apple silicon and Intel Macs |
+| `open-nelko-cli-vVERSION-linux-x86_64.tar.gz` | 64-bit Intel/AMD Linux |
+| `open-nelko-cli-vVERSION-linux-arm64.tar.gz` | 64-bit ARM Linux, including ARM64 Raspberry Pi OS |
 
 Each archive has a `.sha256` file. On Linux verify it with `sha256sum -c ARCHIVE.tar.gz.sha256`; on macOS use `shasum -a 256 -c ARCHIVE.tar.gz.sha256`.
 
@@ -31,7 +33,7 @@ To build from source, install Rust 1.92 or later and a C compiler (Apple's comma
 
 ```sh
 cargo build --release --locked --target-dir target
-./target/release/nelko --help
+./target/release/open-nelko --help
 ```
 
 ## USB
@@ -39,8 +41,8 @@ cargo build --release --locked --target-dir target
 Turn on the printer, load 4×6 labels and connect its USB cable. A USB-C adapter may be needed.
 
 ```sh
-nelko devices
-nelko print label.pdf --transport usb
+open-nelko devices
+open-nelko print label.pdf --transport usb
 ```
 
 USB printing sends TSPL directly to the printer's bulk endpoint. It does not create a macOS print queue or use an installed printer driver. If another app has claimed the printer, close it and let existing print jobs finish.
@@ -48,7 +50,7 @@ USB printing sends TSPL directly to the printer's bulk endpoint. It does not cre
 When more than one printer is connected, select its serial number or `vendor:product` identifier from `devices`:
 
 ```sh
-nelko print label.pdf --transport usb --device SERIAL_NUMBER
+open-nelko print label.pdf --transport usb --device SERIAL_NUMBER
 ```
 
 ## Bluetooth
@@ -56,10 +58,10 @@ nelko print label.pdf --transport usb --device SERIAL_NUMBER
 On Linux, Bluetooth uses the system BlueZ service and D-Bus. Enable your Bluetooth adapter and make sure BlueZ is installed and running. USB access follows your distribution's udev rules and group permissions. The Linux PDF renderer handles common shipping-label PDFs; password-protected PDFs are unsupported.
 
 ```sh
-nelko devices --transport bluetooth
-nelko inspect --device PL70e-BT
-nelko status
-nelko print label.pdf --transport bluetooth --device PL70e-BT
+open-nelko devices --transport bluetooth
+open-nelko inspect --device PL70e-BT
+open-nelko status
+open-nelko print label.pdf --transport bluetooth --device PL70e-BT
 ```
 
 Allow Bluetooth access when macOS asks. If access was denied, enable it for your terminal or the app launching the CLI under System Settings → Privacy & Security → Bluetooth. Connect through the CLI; pairing in macOS settings is not required.
@@ -71,7 +73,7 @@ Bluetooth data is split into chunks capped by the negotiated MTU. Writes with re
 The Nelko profile selects the FFF0/FFF2 channel verified on the tested printer. `status` sends a TSPL status query without printing. If automatic channel detection fails, `inspect` lists services and characteristics without sending print data. After identifying the printer's TSPL data characteristic, select it explicitly:
 
 ```sh
-nelko print label.pdf --transport bluetooth --characteristic FULL_UUID
+open-nelko print label.pdf --transport bluetooth --characteristic FULL_UUID
 ```
 
 This transport supports transparent TSPL over Bluetooth LE. A Bluetooth Classic-only variant or a printer requiring a proprietary handshake needs additional protocol work. Recognition of a writable characteristic alone does not prove compatibility.
@@ -79,9 +81,9 @@ This transport supports transparent TSPL over Bluetooth LE. A Bluetooth Classic-
 ## Check a label before printing
 
 ```sh
-nelko preview label.pdf --output preview.png
-nelko export label.pdf --output label.tspl
-nelko print label.pdf --transport usb --dry-run
+open-nelko preview label.pdf --output preview.png
+open-nelko export label.pdf --output label.tspl
+open-nelko print label.pdf --transport usb --dry-run
 ```
 
 These commands do not contact a printer. The PNG shows the same thresholded pixels used by both transports. Labels render at 203 dpi, 812×1218 dots. Portrait and landscape 4×6 pages fit while preserving their proportions and PDF rotation. Letter and A4 pages are rejected so a full sheet is not silently shrunk onto a label.
@@ -92,7 +94,7 @@ Successful transmission means the bytes were sent; it does not confirm that a ph
 
 ## Add another printer
 
-`nelko profiles` lists built-in profiles. The default is `--profile nelko-pl70e-bt`.
+`open-nelko profiles` lists built-in profiles. The default is `--profile nelko-pl70e-bt`.
 
 The code separates printer profiles, raster rendering, command encoders and transports. Another transparent TSPL printer generally needs a profile and a hardware test. Another command language needs an encoder implementing `LabelEncoder`; USB and Bluetooth can reuse the resulting byte stream. See [Adding printers](docs/ADDING_PRINTERS.md) for the specific extension points and current limits.
 
@@ -114,4 +116,4 @@ The release archive contains the binary, this README, the MIT license, hardware 
 
 The printer's TSPL bitmap path is shared by both connections. The macOS renderer uses Core Graphics through generated `objc2` bindings; Linux uses `hayro`. USB uses `nusb`, and Bluetooth uses `btleplug`. `Cargo.lock` fixes the dependency graph used by CI and releases. The binary embeds the Bluetooth usage description required by macOS.
 
-This project is unaffiliated with Nelko. See [CONTRIBUTING.md](CONTRIBUTING.md) to report hardware results without sharing personal shipping labels.
+This project is not affiliated with, endorsed by, sponsored by, or supported by Nelko. See [NOTICE.md](NOTICE.md) for the full project notice and [CONTRIBUTING.md](CONTRIBUTING.md) to report hardware results without sharing personal shipping labels.

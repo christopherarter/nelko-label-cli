@@ -17,4 +17,4 @@ if version != embedded:
 tag = os.environ.get("RELEASE_TAG")
 if tag and tag != "v" + version:
     raise SystemExit(f"Release tag {tag!r} must match package version v{version}")
-print(f"Building nelko {version}" + (f" for release {tag}" if tag else " (build-only run)"))
+print(f"Building open-nelko {version}" + (f" for release {tag}" if tag else " (build-only run)"))

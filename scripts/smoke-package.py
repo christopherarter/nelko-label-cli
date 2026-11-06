@@ -44,10 +44,13 @@ def check(archive):
                 if not (member.isfile() or member.isdir()) or not (root / member.name).resolve().is_relative_to(root):
                     raise SystemExit(f"Unsafe archive entry: {member.name}")
             package.extractall(root)
-        binaries = [p for p in root.glob("*/nelko") if p.is_file()]
+        binaries = [p for p in root.glob("*/open-nelko") if p.is_file()]
         if len(binaries) != 1:
-            raise SystemExit("Archive must contain one nelko executable")
+            raise SystemExit("Archive must contain one open-nelko executable")
         executable = binaries[0]
+        for document in ("LICENSE", "NOTICE.md"):
+            if not (executable.parent / document).is_file():
+                raise SystemExit(f"Release archive is missing {document}")
 
         def run(*args):
             return subprocess.check_output([str(executable), *map(str, args)], text=True)

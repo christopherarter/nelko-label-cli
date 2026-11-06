@@ -19,4 +19,4 @@ if [ "$target" = aarch64-unknown-linux-musl ]; then
 fi
 rustup target add "$target"
 cargo build --release --locked --target "$target"
-python3 scripts/package.py --binary "$CARGO_TARGET_DIR/$target/release/nelko" --target "$target"
+python3 scripts/package.py --binary "$CARGO_TARGET_DIR/$target/release/open-nelko" --target "$target"

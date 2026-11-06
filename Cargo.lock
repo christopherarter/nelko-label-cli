@@ -935,7 +935,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nelko-cli"
+name = "open-nelko-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",

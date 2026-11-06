@@ -60,5 +60,5 @@ pub(crate) fn named(id: &str) -> Result<&'static PrinterProfile> {
     if let Some(profile) = ALL.iter().find(|profile| profile.id == id) {
         return Ok(profile);
     }
-    bail!("unknown printer profile {id}; run `nelko profiles`")
+    bail!("unknown printer profile {id}; run `open-nelko profiles`")
 }

@@ -58,7 +58,7 @@ pub(crate) fn send(selector: &str, job: &[u8]) -> Result<()> {
     );
     let info = printers
         .pop()
-        .with_context(|| format!("USB printer {selector} not found; run `nelko devices`"))?;
+        .with_context(|| format!("USB printer {selector} not found; run `open-nelko devices`"))?;
     let number = info
         .interfaces()
         .find(|i| i.class() == 7)

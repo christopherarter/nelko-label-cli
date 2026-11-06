@@ -15,9 +15,10 @@ use raster::Label;
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "nelko",
+    name = "open-nelko",
     version,
-    about = "Print PDF labels to a Nelko PL70e-BT over USB or Bluetooth"
+    about = "Print PDF labels to a Nelko PL70e-BT over USB or Bluetooth",
+    after_help = "Independent hobby project; unaffiliated with Nelko.\nMIT licensed. Provided AS IS, without warranty or guaranteed support."
 )]
 struct Cli {
     /// Printer model profile; use `profiles` to list supported models.
