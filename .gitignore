@@ -1,0 +1,6 @@
+/target/
+/dist/
+*.png
+*.tspl
+.DS_Store
+__pycache__/
