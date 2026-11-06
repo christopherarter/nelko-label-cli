@@ -9,17 +9,25 @@ nelko print label.pdf --transport usb
 nelko print label.pdf --transport bluetooth
 ```
 
-This is an independent, early-stage CLI for the PL70e-BT. macOS is the initial supported platform. Hardware qualification is tracked in [HARDWARE.md](HARDWARE.md). Other Nelko models can use different protocols.
+This is an independent, early-stage CLI for the PL70e-BT. macOS and Linux are supported. Hardware qualification is tracked in [HARDWARE.md](HARDWARE.md). Other Nelko models can use different protocols.
 
 ## Install
 
-Release archives contain a single `nelko` executable with its Rust dependencies compiled in. PDF rendering, Bluetooth and USB use frameworks already included in macOS. Running a release does not require Rust, Homebrew, Python, libusb or a vendor driver.
+Release archives contain a single `nelko` executable with its Rust dependencies compiled in. macOS uses its built-in PDF and Bluetooth frameworks. Linux includes a Rust PDF renderer and a statically linked D-Bus client. Running a release does not require Rust, Homebrew, Python, Poppler, libusb or a vendor driver.
 
-Download the macOS archive from GitHub Releases once a release is published, extract it, then run `./nelko --help`. You can put the executable in any directory on your `PATH`.
+Download the matching archive from [GitHub Releases](https://github.com/christopherarter/nelko-label-cli/releases), extract it, then run `./nelko --help`. You can put the executable in any directory on your `PATH`.
 
-The release workflow builds a universal executable for Apple silicon and Intel Macs. Releases are ad-hoc signed. Developer ID signing and notarization are not configured. The minimum deployment target is macOS 12.
+| Download | Runs on |
+| --- | --- |
+| `nelko-cli-vVERSION-macos-universal.tar.gz` | Apple silicon and Intel Macs |
+| `nelko-cli-vVERSION-linux-x86_64.tar.gz` | 64-bit Intel/AMD Linux |
+| `nelko-cli-vVERSION-linux-arm64.tar.gz` | 64-bit ARM Linux, including ARM64 Raspberry Pi OS |
 
-To build from source, install Rust 1.89 or later and Apple's command line developer tools, then run:
+Each archive has a `.sha256` file. On Linux verify it with `sha256sum -c ARCHIVE.tar.gz.sha256`; on macOS use `shasum -a 256 -c ARCHIVE.tar.gz.sha256`.
+
+The Mac executable is ad-hoc signed. Developer ID signing and notarization are not configured. The minimum deployment target is macOS 12. Linux downloads are static musl binaries, so they do not depend on the distribution's glibc or shared libdbus version.
+
+To build from source, install Rust 1.92 or later and a C compiler (Apple's command line developer tools on macOS), then run:
 
 ```sh
 cargo build --release --locked --target-dir target
@@ -44,6 +52,8 @@ nelko print label.pdf --transport usb --device SERIAL_NUMBER
 ```
 
 ## Bluetooth
+
+On Linux, Bluetooth uses the system BlueZ service and D-Bus. Enable your Bluetooth adapter and make sure BlueZ is installed and running. USB access follows your distribution's udev rules and group permissions. The Linux PDF renderer handles common shipping-label PDFs; password-protected PDFs are unsupported.
 
 ```sh
 nelko devices --transport bluetooth
@@ -94,12 +104,14 @@ cargo clippy --all-targets --all-features --locked -- -D warnings
 cargo test --locked
 ```
 
-CI runs these checks on macOS. Tagging a version such as `v0.1.0` runs the release workflow, which builds both Mac architectures, checks that only Apple system libraries are linked, packages dependency license notices and SHA-256 checksums, and creates a draft GitHub release. A maintainer reviews the draft before publishing.
+CI runs these checks on macOS and Linux. Publishing a GitHub release runs the release workflow and attaches all three download archives and their SHA-256 files to that release. It builds the release tag, checks package/embedded versions, validates system-only macOS linkage and fully static Linux linkage, and smoke-tests every extracted archive with a synthetic PDF. All platforms must succeed before assets are uploaded.
+
+To cut a release, update the versions in `Cargo.toml` and `resources/Info.plist` together, commit and push, then publish a GitHub release with the matching tag, such as `v0.1.0`. The assets appear when the Release workflow finishes. The workflow also handles published prereleases. Running it manually from Actions builds downloadable test artifacts without publishing a release.
 
 The release archive contains the binary, this README, the MIT license, hardware qualification notes and third-party license files. Build tools are only needed by contributors and release CI.
 
 ## Protocol and implementation
 
-The printer's TSPL bitmap path is shared by both connections. The macOS renderer uses Core Graphics through generated `objc2` bindings; USB uses `nusb`, and Bluetooth uses `btleplug`. `Cargo.lock` fixes the dependency graph used by CI and releases. The binary embeds the Bluetooth usage description required by macOS.
+The printer's TSPL bitmap path is shared by both connections. The macOS renderer uses Core Graphics through generated `objc2` bindings; Linux uses `hayro`. USB uses `nusb`, and Bluetooth uses `btleplug`. `Cargo.lock` fixes the dependency graph used by CI and releases. The binary embeds the Bluetooth usage description required by macOS.
 
 This project is unaffiliated with Nelko. See [CONTRIBUTING.md](CONTRIBUTING.md) to report hardware results without sharing personal shipping labels.

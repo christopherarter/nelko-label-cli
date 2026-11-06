@@ -7,7 +7,11 @@ permissions:
   contents: read
 jobs:
   check:
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
     env:
       MACOSX_DEPLOYMENT_TARGET: "12.0"
     steps:
@@ -22,9 +26,16 @@ jobs:
         run: cargo +stable clippy --all-targets --all-features --locked -- -D warnings
       - name: Run tests
         run: cargo +stable test --locked
+      - name: Test the portable PDF renderer on macOS
+        if: runner.os == 'macOS'
+        run: cargo +stable test --all-features --locked
+      - name: Check release scripts
+        run: |
+          bash -n scripts/build-universal.sh scripts/build-linux.sh
+          python3 -c "import ast, pathlib; [ast.parse(p.read_text()) for p in pathlib.Path('scripts').glob('*.py')]"
   msrv:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v7
-      - run: rustup toolchain install 1.89.0 --profile minimal
-      - run: cargo +1.89.0 check --locked
+      - run: rustup toolchain install 1.92.0 --profile minimal
+      - run: cargo +1.92.0 check --locked

@@ -1,52 +1,105 @@
 name: Release
+
 on:
-  push:
-    tags: ["v[0-9]*"]
+  release:
+    types: [published]
+  # Build and smoke-test the same archives without creating a release.
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
-  package:
-    runs-on: macos-15
-    permissions:
-      contents: write
+  build:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-universal
+            os: macos-15
+            target: universal-apple-darwin
+          - platform: linux-x86_64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-musl
+          - platform: linux-arm64
+            os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-musl
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_TARGET_DIR: target
+      CARGO_TERM_COLOR: always
+      MACOSX_DEPLOYMENT_TARGET: "12.0"
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
+      CC_x86_64_unknown_linux_musl: musl-gcc
+      CC_aarch64_unknown_linux_musl: musl-gcc
+      # Avoid GCC's libgcc outline-atomic helpers in statically linked vendored D-Bus.
+      CFLAGS_aarch64_unknown_linux_musl: -mno-outline-atomics
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
       - name: Install Rust
         run: |
           rustup toolchain install stable --profile minimal --component rustfmt,clippy
           rustup default stable
-      - name: Check version matches tag
+      - name: Check release version
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: python3 scripts/check-release.py
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
         run: |
-          python3 - <<'PY'
-          import os, plistlib, tomllib
-          with open("Cargo.toml", "rb") as f:
-              version = tomllib.load(f)["package"]["version"]
-          with open("resources/Info.plist", "rb") as f:
-              embedded = plistlib.load(f)["CFBundleVersion"]
-          assert os.environ["RELEASE_TAG"] == "v" + version, "Tag must match Cargo.toml"
-          assert version == embedded, "Info.plist version must match Cargo.toml"
-          PY
-      - name: Validate
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y musl-tools pkg-config
+          rustup target add "${{ matrix.target }}"
+      - name: Validate macOS build
+        if: runner.os == 'macOS'
         run: |
           cargo fmt --all -- --check
           cargo clippy --all-targets --all-features --locked -- -D warnings
           cargo test --locked
-      - name: Build and package both Mac architectures
+          cargo test --all-features --locked
+      - name: Validate Linux build
+        if: runner.os == 'Linux'
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets --all-features --locked --target "${{ matrix.target }}" -- -D warnings
+          cargo test --locked --target "${{ matrix.target }}"
+      - name: Package macOS
+        if: runner.os == 'macOS'
         run: bash scripts/build-universal.sh
-      - name: Retain build artifacts
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        run: bash scripts/build-linux.sh "${{ matrix.target }}"
+      - name: Smoke-test the extracted download
+        run: python3 scripts/smoke-package.py dist/*.tar.gz
+      - name: Retain download archives
         uses: actions/upload-artifact@v7
         with:
-          name: nelko-macos
+          name: release-${{ matrix.platform }}
+          if-no-files-found: error
           path: |
             dist/*.tar.gz
             dist/*.sha256
-      - name: Create draft release
+
+  upload:
+    name: Attach release downloads
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+      - name: Upload assets to the published release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          gh release create "$RELEASE_TAG" dist/*.tar.gz dist/*.sha256 --verify-tag --draft --title "$RELEASE_TAG" --generate-notes
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist/*.tar.gz dist/*.sha256 --clobber

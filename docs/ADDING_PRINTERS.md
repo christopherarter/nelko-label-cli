@@ -19,7 +19,7 @@ The renderer and preview do not contain TSPL commands. Transport modules do not 
 | BLE credit channel or proprietary handshake | Add that protocol's connection/session handling; a writable UUID is insufficient |
 | Bluetooth Classic SPP | Add a separate transport; the existing transport is BLE |
 | USB interface that is not printer class 7 with bulk OUT | Extend discovery/interface selection in `src/usb.rs` |
-| Windows or Linux PDF rendering | Add a renderer and packaging for that OS; only macOS rendering is implemented |
+| Windows PDF rendering | Add Windows transport qualification and packaging; macOS and Linux rendering are implemented |
 
 ## A TSPL adapter
 

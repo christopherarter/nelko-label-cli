@@ -3,7 +3,7 @@ use std::path::Path;
 use crate::profile::Media;
 use anyhow::Result;
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", not(feature = "portable-pdf")))]
 pub(crate) fn render(path: &Path, page_number: Option<u32>, media: Media) -> Result<Vec<u8>> {
     use anyhow::{Context, ensure};
     use objc2_core_foundation::{CFURL, CGPoint, CGRect, CGSize};
@@ -110,14 +110,120 @@ pub(crate) fn render(path: &Path, page_number: Option<u32>, media: Media) -> Res
     Ok(pixels)
 }
 
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn render(_path: &Path, _page_number: Option<u32>, _media: Media) -> Result<Vec<u8>> {
-    anyhow::bail!(
-        "PDF rendering currently requires macOS; Linux and Windows releases are not supported yet"
-    )
+#[cfg(any(target_os = "linux", feature = "portable-pdf"))]
+pub(crate) fn render(path: &Path, page_number: Option<u32>, media: Media) -> Result<Vec<u8>> {
+    use anyhow::{Context, ensure};
+    use hayro::{
+        PixmapSettings, RenderCache, RenderSettings, hayro_interpret::InterpreterSettings,
+        hayro_syntax::Pdf,
+    };
+
+    let (pixel_width, pixel_height) = media.dimensions();
+    ensure!(
+        pixel_width > 0 && pixel_height > 0 && pixel_width <= 8192 && pixel_height <= 8192,
+        "unsupported profile raster dimensions"
+    );
+    let bytes = std::fs::read(path).with_context(|| format!("reading PDF {}", path.display()))?;
+    let pdf = Pdf::new(bytes).map_err(|error| {
+        anyhow::anyhow!(
+            "opening PDF {}: {error:?} (password-protected PDFs are unsupported)",
+            path.display()
+        )
+    })?;
+    let pages = pdf.pages();
+    ensure!(!pages.is_empty(), "PDF contains no pages");
+    ensure!(
+        pages.len() == 1 || page_number.is_some(),
+        "PDF contains {} pages; select one with --page N",
+        pages.len()
+    );
+    let index = page_number
+        .unwrap_or(1)
+        .checked_sub(1)
+        .context("page numbers start at one")? as usize;
+    let page = pages.get(index).with_context(|| {
+        format!(
+            "page {} does not exist (PDF has {} pages)",
+            index + 1,
+            pages.len()
+        )
+    })?;
+    let (width, height) = page.render_dimensions();
+    ensure!(
+        width.is_finite() && height.is_finite() && width > 0.0 && height > 0.0,
+        "PDF page has invalid dimensions"
+    );
+    let portrait = (f64::from(width / height) - media.width_inches / media.height_inches).abs();
+    let landscape = (f64::from(width / height) - media.height_inches / media.width_inches).abs();
+    ensure!(
+        portrait < 0.025 || landscape < 0.025,
+        "PDF page is {:.1}×{:.1} inches, not the selected label aspect ratio; crop or re-export it first",
+        width / 72.0,
+        height / 72.0
+    );
+    let rotate = landscape < portrait;
+    let (target_width, target_height) = if rotate {
+        (pixel_height, pixel_width)
+    } else {
+        (pixel_width, pixel_height)
+    };
+    let scale = (target_width as f32 / width).min(target_height as f32 / height);
+    let pixmap = hayro::render(
+        page,
+        &RenderCache::new(),
+        &InterpreterSettings::default(),
+        &RenderSettings::default(),
+        &PixmapSettings {
+            x_scale: scale,
+            y_scale: scale,
+            bg_color: hayro::vello_cpu::color::palette::css::WHITE,
+        },
+    );
+    let render_width = usize::from(pixmap.width());
+    let render_height = usize::from(pixmap.height());
+    ensure!(render_width > 0 && render_height > 0, "PDF raster is empty");
+    let rgba = pixmap.take_rgba8(hayro::vello_cpu::peniko::ImageAlphaType::Alpha);
+    let (out_width, out_height) = if rotate {
+        (render_height, render_width)
+    } else {
+        (render_width, render_height)
+    };
+    let pad_x = pixel_width.saturating_sub(out_width) / 2;
+    let pad_y = pixel_height.saturating_sub(out_height) / 2;
+    let mut pixels = vec![255; pixel_width * pixel_height];
+    for y in 0..render_height {
+        for x in 0..render_width {
+            let (target_x, target_y) = if rotate {
+                (render_height - 1 - y + pad_x, x + pad_y)
+            } else {
+                (x + pad_x, y + pad_y)
+            };
+            if target_x < pixel_width && target_y < pixel_height {
+                let offset = (y * render_width + x) * 4;
+                let color = &rgba[offset..offset + 4];
+                let gray = (77 * u32::from(color[0])
+                    + 150 * u32::from(color[1])
+                    + 29 * u32::from(color[2])
+                    + 128)
+                    >> 8;
+                pixels[target_y * pixel_width + target_x] =
+                    ((gray * u32::from(color[3]) + 255 * (255 - u32::from(color[3])) + 127) / 255)
+                        as u8;
+            }
+        }
+    }
+    Ok(pixels)
 }
 
-#[cfg(all(test, target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux", feature = "portable-pdf")))]
+pub(crate) fn render(_path: &Path, _page_number: Option<u32>, _media: Media) -> Result<Vec<u8>> {
+    anyhow::bail!("PDF rendering currently supports macOS and Linux")
+}
+
+#[cfg(all(
+    test,
+    any(target_os = "macos", target_os = "linux", feature = "portable-pdf")
+))]
 mod tests {
     use super::*;
     use crate::profile::NELKO;

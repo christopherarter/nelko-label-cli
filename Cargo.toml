@@ -2,12 +2,16 @@
 name = "nelko-cli"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.92"
 description = "Print 4x6 PDF labels to a Nelko PL70e-BT over USB or Bluetooth"
 license = "MIT"
 readme = "README.md"
 keywords = ["nelko", "label", "printer", "bluetooth", "tspl"]
 categories = ["command-line-utilities"]
+
+[features]
+# Exercise the Linux PDF renderer on macOS without changing the default renderer.
+portable-pdf = []
 
 [[bin]]
 name = "nelko"
@@ -18,10 +22,15 @@ anyhow = "1"
 btleplug = "0.13.5"
 clap = { version = "4", features = ["derive"] }
 futures-util = "0.3"
+hayro = "0.9"
 nusb = "0.2.3"
 png = "0.18"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "signal"] }
 uuid = "1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Compile libdbus into Linux releases instead of requiring its shared library.
+dbus = { version = "0.9", features = ["vendored"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFURL", "CFString", "CFData", "CFCGTypes"] }

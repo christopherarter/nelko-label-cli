@@ -11,6 +11,7 @@ Initial target: Nelko PL70e-BT, 203 dpi, 4×6 thermal labels, on macOS.
 | Bluetooth discovery and services | Verified; FFF0/FFF2 channel answered TSPL status with 0x00 (ready) |
 | Bluetooth physical print | Verified 2026-11-06; user confirmed the requested PDF printed correctly at full 4×6 size |
 | Intel Mac executable | Cross-compiled release target; not hardware tested |
+| Linux PDF/CLI path | All 10 synthetic tests pass in a native ARM64 musl Linux container; physical printer access on Linux is unverified |
 
 Support for both transport APIs is implemented. Physical print compatibility must be confirmed independently for the exact printer revision. A successful byte transfer does not establish that the printer interpreted or printed the job.
 
