@@ -78,6 +78,7 @@ def main():
         for document in ["README.md", "LICENSE", "NOTICE.md", "HARDWARE.md", "CONTRIBUTING.md", "VALIDATION.md"]:
             shutil.copy2(root / document, stage / document)
         shutil.copytree(root / "docs", stage / "docs")
+        shutil.copytree(root / "skills", stage / "skills", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         notices = ["Third-party dependencies compiled into open-nelko\n"]
         for package in sorted((packages[i] for i in included if i != root_id), key=lambda p: (p["name"], p["version"])):
             source = Path(package["manifest_path"]).parent

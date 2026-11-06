@@ -36,6 +36,18 @@ cargo build --release --locked --target-dir target
 ./target/release/open-nelko --help
 ```
 
+## Use with an agent
+
+Install the [open-nelko skill](skills/open-nelko) to let an agent set up the CLI and handle requests such as "print this label over Bluetooth." Give it this URL:
+
+```text
+https://github.com/christopherarter/open-nelko-cli/tree/main/skills/open-nelko
+```
+
+The skill uses a portable `SKILL.md` and a Python standard-library installer, with no agent-specific tools or configuration. Copy the entire skill directory into your agent's supported skill location. Its installer selects the matching macOS or Linux release, verifies SHA-256, installs without administrator access, and preserves the bundled licenses. Python 3.9+ is needed for the optional installer; the CLI itself does not need Python.
+
+You can then say: `Print /absolute/path/label.pdf on my Nelko using Bluetooth.` The skill discovers the printer, validates the label, and sends one copy. It asks when a file, page, or printer is ambiguous, and stops after uncertain transfers to avoid duplicate labels. Installation requires a published release with finished download assets; the skill does not silently build from source.
+
 ## USB
 
 Turn on the printer, load 4×6 labels and connect its USB cable. A USB-C adapter may be needed.
@@ -104,13 +116,14 @@ The code separates printer profiles, raster rendering, command encoders and tran
 cargo fmt --all -- --check
 cargo clippy --all-targets --all-features --locked -- -D warnings
 cargo test --locked
+python3 -m unittest discover -s tests -p 'test_skill_*.py'
 ```
 
 CI runs these checks on macOS and Linux. Publishing a GitHub release runs the release workflow and attaches all three download archives and their SHA-256 files to that release. It builds the release tag, checks package/embedded versions, validates system-only macOS linkage and fully static Linux linkage, and smoke-tests every extracted archive with a synthetic PDF. All platforms must succeed before assets are uploaded.
 
 To cut a release, update the versions in `Cargo.toml` and `resources/Info.plist` together, commit and push, then publish a GitHub release with the matching tag, such as `v0.1.0`. The assets appear when the Release workflow finishes. The workflow also handles published prereleases. Running it manually from Actions builds downloadable test artifacts without publishing a release.
 
-The release archive contains the binary, this README, the MIT license, hardware qualification notes and third-party license files. Build tools are only needed by contributors and release CI.
+The release archive contains the binary, this README, the MIT license, hardware qualification notes, the portable agent skill and third-party license files. Build tools are only needed by contributors and release CI.
 
 ## Protocol and implementation
 

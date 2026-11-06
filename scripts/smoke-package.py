@@ -81,7 +81,22 @@ def check(archive):
             raise SystemExit("PDF is flipped, undersized or has a wrong background")
         if "No device was contacted" not in run("print", pdf, "--transport", "usb", "--dry-run"):
             raise SystemExit("Dry run failed")
-        print(f"Verified {archive.name}: checksum, executable, PDF preview, TSPL raster and dry run")
+        skill = executable.parent / "skills/open-nelko"
+        for name in ("SKILL.md", "LICENSE", "scripts/install.py"):
+            if not (skill / name).is_file():
+                raise SystemExit(f"Release is missing skill file: {name}")
+        bin_dir = root / "installed/bin"
+        subprocess.run([
+            sys.executable, str(skill / "scripts/install.py"),
+            "--archive", str(archive.resolve()),
+            "--bin-dir", str(bin_dir), "--data-dir", str(root / "installed/share"),
+        ], check=True)
+        installed = bin_dir / "open-nelko"
+        if subprocess.check_output([str(installed), "--version"], text=True) != run("--version"):
+            raise SystemExit("Installed executable version differs from packaged executable")
+        if "No device was contacted" not in subprocess.check_output([str(installed), "print", str(pdf), "--transport", "usb", "--dry-run"], text=True):
+            raise SystemExit("Installed executable dry run failed")
+        print(f"Verified {archive.name}: checksum, executable, PDF preview, TSPL raster, dry run and skill installation")
 
 
 if __name__ == "__main__":
